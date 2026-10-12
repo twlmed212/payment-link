@@ -1,0 +1,41 @@
+/* Card logos beside "Credit / Debit Card – Secure Payment Link". */
+
+/* Checkout block: title left, logos right; logos wrap under the title on narrow screens. */
+.spl-block-label {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px 12px;
+	width: 100%;
+}
+.spl-block-label .wc-block-components-payment-method-icons {
+	display: flex;
+	flex-wrap: nowrap;
+	gap: 4px;
+	margin: 0;
+}
+.spl-block-label .wc-block-components-payment-method-icon {
+	display: block;
+	width: 38px;
+	height: 24px;
+	margin: 0;
+}
+.spl-block-description {
+	margin: 0;
+}
+
+/* Classic checkout. */
+.payment_method_syssell_payment_link .spl-card-icons {
+	display: inline-flex;
+	gap: 4px;
+	margin-left: 8px;
+	vertical-align: middle;
+}
+.payment_method_syssell_payment_link .spl-card-icons img {
+	float: none;
+	width: 38px;
+	height: 24px;
+	max-height: none;
+	margin: 0;
+}
