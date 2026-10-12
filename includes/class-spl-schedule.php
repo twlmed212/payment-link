@@ -349,7 +349,7 @@ class SPL_Schedule {
 		}
 		$email = $emails['SPL_Email_Payment_Link'];
 		if ( ! $email->is_enabled() ) {
-			$order->add_order_note( __( 'The payment link was not emailed: the “Card payment link” email is turned off in WooCommerce → Settings → Emails.', 'syssell-payment-link' ) );
+			$order->add_order_note( __( 'The invoice was not emailed: the “Card invoice” email is turned off in WooCommerce → Settings → Emails.', 'syssell-payment-link' ) );
 			return false;
 		}
 		$sent = $email->trigger( $order->get_id(), $variant );

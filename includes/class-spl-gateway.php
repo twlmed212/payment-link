@@ -1,7 +1,7 @@
 <?php
 /**
  * The checkout payment method. Nothing is charged at checkout: the order goes
- * On hold, and the customer pays later through the card payment link the store
+ * On hold, and the customer pays later by card through the invoice the store
  * sends from the order screen (see SPL_Admin / SPL_Schedule).
  *
  * @package SysSell_Payment_Link
@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * "Credit / Debit Card – Secure Payment Link" gateway.
+ * "Credit / Debit Card – Pay by Invoice" gateway.
  */
 class SPL_Gateway extends WC_Payment_Gateway {
 
@@ -23,11 +23,11 @@ class SPL_Gateway extends WC_Payment_Gateway {
 	public static function defaults(): array {
 		return array(
 			'enabled'       => 'no',
-			'title'         => __( 'Credit / Debit Card – Secure Payment Link', 'syssell-payment-link' ),
-			'description'   => __( 'Place your order now and we’ll email you a secure link to pay by card within a couple of hours — usually much sooner. No card details needed at checkout, and your license key is sent as soon as your payment is confirmed.', 'syssell-payment-link' ),
+			'title'         => __( 'Credit / Debit Card – Pay by Invoice', 'syssell-payment-link' ),
+			'description'   => __( 'Place your order now and we’ll email you an invoice within a couple of hours — usually much sooner. Pay it securely with any credit or debit card. No card details are needed at checkout, and your license key is sent as soon as your payment is confirmed.', 'syssell-payment-link' ),
 			'show_icons'    => 'yes',
-			'thank_you'     => __( 'Thank you for your order! We’re preparing your secure card payment link and will email it to %s within a couple of hours — usually much sooner. Please keep an eye on your inbox (and your spam folder, just in case).', 'syssell-payment-link' ),
-			'email_intro'   => __( 'Thank you for your order! We’re preparing your secure card payment link and will send it in a separate email within a couple of hours — usually much sooner. You can pay with any credit or debit card, and your license key follows as soon as your payment is confirmed.', 'syssell-payment-link' ),
+			'thank_you'     => __( 'Thank you for your order! We’re preparing your invoice and will email it to %s within a couple of hours — usually much sooner. You can pay it securely with any credit or debit card. Please keep an eye on your inbox (and your spam folder, just in case).', 'syssell-payment-link' ),
+			'email_intro'   => __( 'Thank you for your order! We’re preparing your invoice and will email it to you separately within a couple of hours — usually much sooner. You can pay it securely with any credit or debit card, and your license key follows as soon as your payment is confirmed.', 'syssell-payment-link' ),
 			'reminder_days' => '2, 6, 13, 20, 27',
 			'cancel_after'  => '30',
 		);
@@ -49,6 +49,38 @@ class SPL_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
+	 * 1.0.1 reworded the customer texts from "payment link" to "invoice". A
+	 * setting still holding a 1.0.0 default (saved by pressing Save on the
+	 * settings page) is cleared so the new default shows; edited texts stay.
+	 */
+	public static function maybe_upgrade(): void {
+		if ( version_compare( (string) get_option( 'spl_version', '1.0.0' ), SPL_VERSION, '>=' ) ) {
+			return;
+		}
+		$old   = array(
+			'title'       => 'Credit / Debit Card – Secure Payment Link',
+			'description' => 'Place your order now and we’ll email you a secure link to pay by card within a couple of hours — usually much sooner. No card details needed at checkout, and your license key is sent as soon as your payment is confirmed.',
+			'thank_you'   => 'Thank you for your order! We’re preparing your secure card payment link and will email it to %s within a couple of hours — usually much sooner. Please keep an eye on your inbox (and your spam folder, just in case).',
+			'email_intro' => 'Thank you for your order! We’re preparing your secure card payment link and will send it in a separate email within a couple of hours — usually much sooner. You can pay with any credit or debit card, and your license key follows as soon as your payment is confirmed.',
+		);
+		$key   = 'woocommerce_' . self::ID . '_settings';
+		$saved = get_option( $key, array() );
+		if ( is_array( $saved ) ) {
+			$changed = false;
+			foreach ( $old as $field => $text ) {
+				if ( isset( $saved[ $field ] ) && $text === $saved[ $field ] ) {
+					unset( $saved[ $field ] );
+					$changed = true;
+				}
+			}
+			if ( $changed ) {
+				update_option( $key, $saved );
+			}
+		}
+		update_option( 'spl_version', SPL_VERSION ); // Autoloaded: read on every request.
+	}
+
+	/**
 	 * Card logos shown beside the method name (Stripe takes all major cards).
 	 *
 	 * @return array[] { id, src, alt }
@@ -67,8 +99,8 @@ class SPL_Gateway extends WC_Payment_Gateway {
 	public function __construct() {
 		$this->id                 = self::ID;
 		$this->has_fields         = false;
-		$this->method_title       = __( 'Card Payment Link', 'syssell-payment-link' );
-		$this->method_description = __( 'Customers order now and pay by card later. The order waits On hold until you paste a card payment link (for example a Stripe invoice) in the “Card payment link” box on the order screen — the customer gets it by email straight away, then reminders until it is paid. Change the order to Processing or Completed once the payment arrives; that delivers the license.', 'syssell-payment-link' );
+		$this->method_title       = __( 'Card Payment by Invoice', 'syssell-payment-link' );
+		$this->method_description = __( 'Customers order now and pay by card later. The order waits On hold until you paste the invoice’s payment link (for example a Stripe invoice) in the “Card payment link” box on the order screen — the customer gets the invoice by email straight away, then reminders until it is paid. Change the order to Processing or Completed once the payment arrives; that delivers the license.', 'syssell-payment-link' );
 		$this->supports           = array( 'products' );
 
 		$this->init_form_fields();
@@ -82,7 +114,7 @@ class SPL_Gateway extends WC_Payment_Gateway {
 	}
 
 	/**
-	 * Settings under WooCommerce → Settings → Payments → Card Payment Link.
+	 * Settings under WooCommerce → Settings → Payments → Card Payment by Invoice.
 	 */
 	public function init_form_fields() {
 		$d = self::defaults();
@@ -91,7 +123,7 @@ class SPL_Gateway extends WC_Payment_Gateway {
 			'enabled'       => array(
 				'title'   => __( 'Enable/Disable', 'syssell-payment-link' ),
 				'type'    => 'checkbox',
-				'label'   => __( 'Offer “pay by card through a payment link” at checkout', 'syssell-payment-link' ),
+				'label'   => __( 'Offer “pay by card through an invoice” at checkout', 'syssell-payment-link' ),
 				'default' => $d['enabled'],
 			),
 			'title'         => array(
@@ -117,7 +149,7 @@ class SPL_Gateway extends WC_Payment_Gateway {
 			'thank_you'     => array(
 				'title'       => __( 'Order confirmation message', 'syssell-payment-link' ),
 				'type'        => 'textarea',
-				'description' => __( 'Shown on the order confirmation page until the link is sent. %s is replaced with the customer’s email address.', 'syssell-payment-link' ),
+				'description' => __( 'Shown on the order confirmation page until the invoice is sent. %s is replaced with the customer’s email address.', 'syssell-payment-link' ),
 				'default'     => $d['thank_you'],
 				'desc_tip'    => true,
 			),
@@ -131,19 +163,19 @@ class SPL_Gateway extends WC_Payment_Gateway {
 			'reminders'     => array(
 				'title'       => __( 'Reminders', 'syssell-payment-link' ),
 				'type'        => 'title',
-				'description' => __( 'Counted from the day you send the payment link. Every reminder repeats the same link. Reminders stop as soon as the order leaves On hold.', 'syssell-payment-link' ),
+				'description' => __( 'Counted from the day you send the invoice. Every reminder repeats the same invoice link. Reminders stop as soon as the order leaves On hold.', 'syssell-payment-link' ),
 			),
 			'reminder_days' => array(
 				'title'       => __( 'Send reminders on day', 'syssell-payment-link' ),
 				'type'        => 'text',
-				'description' => __( 'Days after the link was sent, separated by commas. The last one is worded as a final reminder.', 'syssell-payment-link' ),
+				'description' => __( 'Days after the invoice was sent, separated by commas. The last one is worded as a final reminder.', 'syssell-payment-link' ),
 				'default'     => $d['reminder_days'],
 				'placeholder' => $d['reminder_days'],
 			),
 			'cancel_after'  => array(
 				'title'             => __( 'Cancel unpaid orders after', 'syssell-payment-link' ),
 				'type'              => 'number',
-				'description'       => __( 'Days after the link was sent. The order is cancelled, its stock released, and the customer told. 0 = never cancel automatically.', 'syssell-payment-link' ),
+				'description'       => __( 'Days after the invoice was sent. The order is cancelled, its stock released, and the customer told. 0 = never cancel automatically.', 'syssell-payment-link' ),
 				'default'           => $d['cancel_after'],
 				'custom_attributes' => array(
 					'min'  => '0',
@@ -167,6 +199,17 @@ class SPL_Gateway extends WC_Payment_Gateway {
 			$html = '<span class="spl-card-icons">' . $html . '</span>';
 		}
 		return apply_filters( 'woocommerce_gateway_icon', $html, $this->id );
+	}
+
+	/**
+	 * Classic checkout: the description as a highlighted note (same look as the
+	 * Checkout block, assets/css/checkout.css).
+	 */
+	public function payment_fields() {
+		$description = $this->get_description();
+		if ( $description ) {
+			echo '<p class="spl-note">' . wp_kses_post( wptexturize( $description ) ) . '</p>';
+		}
 	}
 
 	/**

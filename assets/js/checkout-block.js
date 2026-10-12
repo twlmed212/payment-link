@@ -1,5 +1,5 @@
 /**
- * "Credit / Debit Card – Secure Payment Link" in the Checkout block.
+ * "Credit / Debit Card – Pay by Invoice" in the Checkout block.
  * Plain script (no build step): uses the globals WooCommerce and WordPress load.
  */
 ( function () {
@@ -24,7 +24,7 @@
 	}
 
 	function Content() {
-		return description ? el( 'p', { className: 'spl-block-description' }, description ) : null;
+		return description ? el( 'p', { className: 'spl-note' }, description ) : null;
 	}
 
 	wc.wcBlocksRegistry.registerPaymentMethod( {

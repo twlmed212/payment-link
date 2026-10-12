@@ -1,6 +1,6 @@
 <?php
 /**
- * Card payment link expired email (HTML).
+ * Card invoice expired email (HTML).
  *
  * Override by copying to yourtheme/woocommerce/emails/spl-link-expired.php.
  *

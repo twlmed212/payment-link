@@ -36,10 +36,10 @@ class SPL_Storefront {
 	}
 
 	/**
-	 * Checkout styles for the logos (checkout and pay-for-order pages).
+	 * Checkout styles for the note and the logos (checkout and pay-for-order pages).
 	 */
 	public static function styles(): void {
-		if ( function_exists( 'is_checkout' ) && is_checkout() && 'yes' === SPL_Gateway::setting( 'show_icons' ) ) {
+		if ( function_exists( 'is_checkout' ) && is_checkout() && 'yes' === SPL_Gateway::setting( 'enabled' ) ) {
 			wp_enqueue_style( 'spl-checkout', SPL_URL . 'assets/css/checkout.css', array(), SPL_VERSION );
 		}
 	}
@@ -49,10 +49,10 @@ class SPL_Storefront {
 		return html_entity_decode( wp_strip_all_tags( wc_price( $order->get_total(), array( 'currency' => $order->get_currency() ) ) ), ENT_QUOTES, 'UTF-8' );
 	}
 
-	/** "Pay $29.99 now". */
+	/** "Pay invoice – $29.99". */
 	public static function pay_label( WC_Order $order ): string {
 		/* translators: %s: order total */
-		return sprintf( __( 'Pay %s now', 'syssell-payment-link' ), self::amount( $order ) );
+		return sprintf( __( 'Pay invoice – %s', 'syssell-payment-link' ), self::amount( $order ) );
 	}
 
 	/**
@@ -65,18 +65,18 @@ class SPL_Storefront {
 	}
 
 	/**
-	 * Once the link exists: where it was sent and that they can pay right here.
+	 * Once the invoice was sent: where to, and that they can pay right here.
 	 *
 	 * @param WC_Order $order Order.
 	 */
 	public static function link_ready_text( WC_Order $order ): string {
 		/* translators: %s: customer email */
-		return sprintf( __( 'We’ve emailed your secure payment link to %s. You can also pay right here with any credit or debit card — it takes about a minute, and your license key follows as soon as your payment is confirmed.', 'syssell-payment-link' ), $order->get_billing_email() );
+		return sprintf( __( 'We’ve emailed your invoice to %s. You can also pay it right here with any credit or debit card — it takes about a minute, and your license key follows as soon as your payment is confirmed.', 'syssell-payment-link' ), $order->get_billing_email() );
 	}
 
 	/**
-	 * The theme's order status card for an On hold order of ours: "your link is
-	 * on its way", then "pay now" with a button once the link was sent.
+	 * The theme's order status card for an On hold order of ours: "your invoice
+	 * is on its way", then "your invoice is ready" with a Pay button once sent.
 	 *
 	 * @param array    $state Status { key, tone, title, text, steps[], action? }.
 	 * @param WC_Order $order Order.
@@ -89,7 +89,7 @@ class SPL_Storefront {
 		$link = SPL_Schedule::link( $order );
 		if ( '' !== $link && SPL_Schedule::started( $order ) ) {
 			$state['tone']   = 'info';
-			$state['title']  = __( 'Your payment link is ready', 'syssell-payment-link' );
+			$state['title']  = __( 'Your invoice is ready', 'syssell-payment-link' );
 			$state['text']   = str_replace( esc_html( $order->get_billing_email() ), '<strong>' . esc_html( $order->get_billing_email() ) . '</strong>', esc_html( self::link_ready_text( $order ) ) );
 			$state['action'] = array(
 				'url'      => $link,
@@ -99,7 +99,7 @@ class SPL_Storefront {
 			return $state;
 		}
 		$state['tone']  = 'info';
-		$state['title'] = __( 'Your payment link is on its way', 'syssell-payment-link' );
+		$state['title'] = __( 'Your invoice is on its way', 'syssell-payment-link' );
 		$state['text']  = self::thank_you_text( $order );
 		return $state;
 	}

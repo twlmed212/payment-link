@@ -1,6 +1,6 @@
 <?php
 /**
- * Card payment link email (HTML).
+ * Invoice email — the card payment link (HTML).
  *
  * Override by copying to yourtheme/woocommerce/emails/spl-payment-link.php.
  *
@@ -43,24 +43,24 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 	switch ( $variant ) {
 		case 'updated':
 			/* translators: %s: order number */
-			echo esc_html( sprintf( __( 'We’ve updated the payment link for your order #%s. Please use the button below — it replaces the link we sent earlier.', 'syssell-payment-link' ), $number ) );
+			echo esc_html( sprintf( __( 'We’ve updated the invoice for your order #%s. Please use the button below — it replaces the invoice we sent earlier.', 'syssell-payment-link' ), $number ) );
 			break;
 		case 'reminder':
 			/* translators: %s: order number */
-			echo esc_html( sprintf( __( 'Just a friendly reminder — your order #%s is reserved for you and waiting for payment. You can pay securely with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number ) );
+			echo esc_html( sprintf( __( 'Just a friendly reminder — the invoice for your order #%s is still open. Your order is reserved for you, and you can pay securely with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number ) );
 			break;
 		case 'final':
 			echo esc_html(
 				$cancel_date
 					/* translators: 1: order number, 2: date */
-					? sprintf( __( 'Your order #%1$s is still waiting for payment. We’ll keep it reserved until %2$s — after that it will be cancelled automatically. If you still want it, you can pay with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number, $cancel_date )
+					? sprintf( __( 'The invoice for your order #%1$s is still unpaid. We’ll keep your order reserved until %2$s — after that it will be cancelled automatically. If you still want it, you can pay with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number, $cancel_date )
 					/* translators: %s: order number */
-					: sprintf( __( 'Your order #%s is still waiting for payment. If you still want it, you can pay with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number )
+					: sprintf( __( 'The invoice for your order #%s is still unpaid. If you still want the order, you can pay with any credit or debit card in about a minute.', 'syssell-payment-link' ), $number )
 			);
 			break;
 		default:
 			/* translators: %s: order number */
-			echo esc_html( sprintf( __( 'Good news — the secure payment link for your order #%s is ready. Pay with any credit or debit card in about a minute, and your license key will be on its way as soon as your payment is confirmed.', 'syssell-payment-link' ), $number ) );
+			echo esc_html( sprintf( __( 'Thank you for your order. Your invoice for order #%s is ready — you can pay it securely with any credit or debit card in about a minute, and your license key will be on its way as soon as your payment is confirmed.', 'syssell-payment-link' ), $number ) );
 	}
 	?>
 </p>
@@ -74,7 +74,7 @@ do_action( 'woocommerce_email_header', $email_heading, $email ); ?>
 						<a href="<?php echo esc_url( $link ); ?>" style="display:inline-block;padding:15px 32px;font-size:16px;font-weight:bold;color:<?php echo esc_attr( $on_base ); ?>;text-decoration:none;border-radius:10px;">
 							<?php
 							/* translators: %s: order total */
-							echo esc_html( sprintf( __( 'Pay %s securely', 'syssell-payment-link' ), $amount ) );
+							echo esc_html( sprintf( __( 'Pay invoice – %s', 'syssell-payment-link' ), $amount ) );
 							?>
 						</a>
 					</td>

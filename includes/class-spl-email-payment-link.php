@@ -1,7 +1,7 @@
 <?php
 /**
- * Customer email carrying the card payment link. One email, four wordings:
- * initial (first send, or "Resend"), updated (the link changed), reminder,
+ * Customer email carrying the invoice (the card payment link). One email, four wordings:
+ * initial (first send, or "Resend"), updated (a new invoice), reminder,
  * and final (the last reminder, with the cancel date).
  *
  * @package SysSell_Payment_Link
@@ -10,7 +10,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * "Card payment link" email (WooCommerce → Settings → Emails).
+ * "Card invoice" email (WooCommerce → Settings → Emails).
  */
 class SPL_Email_Payment_Link extends WC_Email {
 
@@ -34,8 +34,8 @@ class SPL_Email_Payment_Link extends WC_Email {
 	public function __construct() {
 		$this->id             = 'customer_payment_link';
 		$this->customer_email = true;
-		$this->title          = __( 'Card payment link', 'syssell-payment-link' );
-		$this->description    = __( 'Sent to the customer when you add a card payment link to an order (payment method “Card Payment Link”), then as reminders until the order is paid or expires.', 'syssell-payment-link' );
+		$this->title          = __( 'Card invoice', 'syssell-payment-link' );
+		$this->description    = __( 'The invoice email: sent to the customer when you add the card payment link to an order paid “by invoice”, then as reminders until the order is paid or expires.', 'syssell-payment-link' );
 		$this->template_html  = 'emails/spl-payment-link.php';
 		$this->template_plain = 'emails/plain/spl-payment-link.php';
 		$this->template_base  = SPL_PATH . 'templates/';
@@ -49,12 +49,12 @@ class SPL_Email_Payment_Link extends WC_Email {
 
 	/** Default subject (first email). */
 	public function get_default_subject() {
-		return __( 'Your secure payment link for order #{order_number}', 'syssell-payment-link' );
+		return __( 'Your invoice for order #{order_number}', 'syssell-payment-link' );
 	}
 
 	/** Default heading (first email). */
 	public function get_default_heading() {
-		return __( 'Your payment link is ready', 'syssell-payment-link' );
+		return __( 'Your invoice is ready', 'syssell-payment-link' );
 	}
 
 	/**
@@ -65,7 +65,7 @@ class SPL_Email_Payment_Link extends WC_Email {
 	private function default_for( string $key ): string {
 		switch ( $key ) {
 			case 'subject_reminder':
-				return __( 'Reminder: order #{order_number} is waiting for payment', 'syssell-payment-link' );
+				return __( 'Reminder: your invoice for order #{order_number} is still open', 'syssell-payment-link' );
 			case 'heading_reminder':
 				return __( 'Your order is waiting for you', 'syssell-payment-link' );
 			case 'subject_final':
@@ -193,8 +193,8 @@ class SPL_Email_Payment_Link extends WC_Email {
 				'label'   => __( 'Enable this email', 'syssell-payment-link' ),
 				'default' => 'yes',
 			),
-			'subject'            => $text( __( 'Subject — payment link', 'syssell-payment-link' ), $this->default_for( 'subject' ) ),
-			'heading'            => $text( __( 'Heading — payment link', 'syssell-payment-link' ), $this->default_for( 'heading' ) ),
+			'subject'            => $text( __( 'Subject — invoice', 'syssell-payment-link' ), $this->default_for( 'subject' ) ),
+			'heading'            => $text( __( 'Heading — invoice', 'syssell-payment-link' ), $this->default_for( 'heading' ) ),
 			'subject_reminder'   => $text( __( 'Subject — reminder', 'syssell-payment-link' ), $this->default_for( 'subject_reminder' ) ),
 			'heading_reminder'   => $text( __( 'Heading — reminder', 'syssell-payment-link' ), $this->default_for( 'heading_reminder' ) ),
 			'subject_final'      => $text( __( 'Subject — last reminder', 'syssell-payment-link' ), $this->default_for( 'subject_final' ) ),

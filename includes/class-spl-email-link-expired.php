@@ -1,7 +1,7 @@
 <?php
 /**
  * Customer email sent when an unpaid order is cancelled at the end of the
- * payment link's reminder period.
+ * invoice's reminder period.
  *
  * @package SysSell_Payment_Link
  */
@@ -9,7 +9,7 @@
 defined( 'ABSPATH' ) || exit;
 
 /**
- * "Card payment link expired" email (WooCommerce → Settings → Emails).
+ * "Card invoice expired" email (WooCommerce → Settings → Emails).
  */
 class SPL_Email_Link_Expired extends WC_Email {
 
@@ -19,8 +19,8 @@ class SPL_Email_Link_Expired extends WC_Email {
 	public function __construct() {
 		$this->id             = 'customer_payment_link_expired';
 		$this->customer_email = true;
-		$this->title          = __( 'Card payment link expired', 'syssell-payment-link' );
-		$this->description    = __( 'Sent to the customer when an order paid by “Card Payment Link” is cancelled automatically because it stayed unpaid.', 'syssell-payment-link' );
+		$this->title          = __( 'Card invoice expired', 'syssell-payment-link' );
+		$this->description    = __( 'Sent to the customer when an order paid “by invoice” is cancelled automatically because the invoice stayed unpaid.', 'syssell-payment-link' );
 		$this->template_html  = 'emails/spl-link-expired.php';
 		$this->template_plain = 'emails/plain/spl-link-expired.php';
 		$this->template_base  = SPL_PATH . 'templates/';
