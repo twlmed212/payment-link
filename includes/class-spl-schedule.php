@@ -28,6 +28,7 @@ class SPL_Schedule {
 	const META_LAST_SENT = '_spl_last_sent';      // When the customer was last emailed.
 	const META_STOPPED   = '_spl_stopped';        // When an admin stopped the reminders.
 	const META_EXPIRED   = '_spl_expired';        // When the order was cancelled for non-payment.
+	const META_PREVIOUS  = '_spl_previous_method'; // Payment method before an invoice was sent (adopted orders).
 
 	/**
 	 * Hook in.
@@ -140,6 +141,24 @@ class SPL_Schedule {
 			$order->add_order_note( __( 'Payment link changed and emailed to the customer. Later reminders use the new link.', 'syssell-payment-link' ) );
 		}
 		return $sent;
+	}
+
+	/**
+	 * Switch an order placed with another payment method (a declined card,
+	 * unpaid crypto …) to this one, so its invoice, reminders and customer
+	 * pages all apply. The old method is kept in an order note and in meta.
+	 *
+	 * @param WC_Order $order Order.
+	 */
+	public static function adopt( WC_Order $order ): void {
+		$previous = $order->get_payment_method_title() ? $order->get_payment_method_title() : $order->get_payment_method();
+		$title    = SPL_Gateway::setting( 'title' );
+		$order->update_meta_data( self::META_PREVIOUS, $order->get_payment_method() );
+		$order->set_payment_method( SPL_Gateway::ID );
+		$order->set_payment_method_title( $title );
+		$order->save();
+		/* translators: 1: old payment method, 2: new payment method */
+		$order->add_order_note( sprintf( __( 'Payment method changed from “%1$s” to “%2$s” to send a card invoice.', 'syssell-payment-link' ), $previous, $title ) );
 	}
 
 	/**

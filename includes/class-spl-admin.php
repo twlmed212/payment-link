@@ -39,7 +39,9 @@ class SPL_Admin {
 	}
 
 	/**
-	 * The box, on orders paid with this method.
+	 * The box: on orders paid with this method, and on unpaid orders placed
+	 * with another one (a declined card, unpaid crypto …) so an invoice can be
+	 * sent to them too.
 	 *
 	 * @param string $screen_id Screen ID.
 	 */
@@ -49,7 +51,7 @@ class SPL_Admin {
 			return;
 		}
 		$order = self::current_order();
-		if ( ! SPL_Schedule::is_ours( $order ) ) {
+		if ( ! SPL_Schedule::is_ours( $order ) && ! self::can_switch( $order ) ) {
 			return;
 		}
 		add_meta_box( 'spl-payment-link', __( 'Card payment link', 'syssell-payment-link' ), array( __CLASS__, 'render_box' ), $order_screen, 'side', 'high' );
@@ -77,6 +79,17 @@ class SPL_Admin {
 			}
 		}
 		$wp_meta_boxes[ $screen_id ]['side']['high'] = $placed + $ours; // phpcs:ignore WordPress.WP.GlobalVariablesOverride.Prohibited
+	}
+
+	/**
+	 * Whether an order placed with another payment method can be sent an
+	 * invoice: unpaid, not free, and On hold, Pending or Failed.
+	 *
+	 * @param WC_Order|null $order Order.
+	 */
+	private static function can_switch( $order ): bool {
+		return $order instanceof WC_Order && ! SPL_Schedule::is_ours( $order ) && $order->get_total() > 0 && ! $order->is_paid()
+			&& $order->has_status( array( 'on-hold', 'pending', 'failed' ) );
 	}
 
 	/** The order being edited, or null. */
@@ -122,6 +135,12 @@ class SPL_Admin {
 		wp_nonce_field( 'spl_save_link', 'spl_nonce' );
 		echo '<div class="spl-box">';
 
+		if ( ! SPL_Schedule::is_ours( $order ) ) {
+			self::render_switch_box( $order, $amount );
+			echo '</div>';
+			return;
+		}
+
 		if ( ! $on_hold ) {
 			if ( $order->is_paid() ) {
 				self::status( 'done', __( 'Paid — reminders ended', 'syssell-payment-link' ) );
@@ -156,7 +175,7 @@ class SPL_Admin {
 				/* translators: %s: date */
 				echo '<li>' . esc_html( sprintf( __( 'First sent: %s', 'syssell-payment-link' ), self::when( $started ) ) ) . '</li>';
 			}
-			if ( $last && $last !== $started ) {
+			if ( $last && $last - $started > MINUTE_IN_SECONDS ) {
 				/* translators: %s: date */
 				echo '<li>' . esc_html( sprintf( __( 'Last emailed: %s', 'syssell-payment-link' ), self::when( $last ) ) ) . '</li>';
 			}
@@ -222,6 +241,38 @@ class SPL_Admin {
 	}
 
 	/**
+	 * The box on an unpaid order placed with another payment method.
+	 *
+	 * @param WC_Order $order  Order.
+	 * @param string   $amount Order total as text.
+	 */
+	private static function render_switch_box( WC_Order $order, string $amount ): void {
+		$method = $order->get_payment_method_title() ? $order->get_payment_method_title() : $order->get_payment_method();
+		self::status( 'warn', __( 'No invoice sent yet', 'syssell-payment-link' ) );
+		echo '<p>' . wp_kses(
+			sprintf(
+				/* translators: 1: payment method, 2: order status, 3: amount, 4: customer email */
+				__( 'Placed with %1$s (%2$s). To get paid by card, create an invoice for %3$s for %4$s (for example in Stripe), paste its payment link below and save. The customer gets it by email right away.', 'syssell-payment-link' ),
+				'<strong>' . esc_html( $method ) . '</strong>',
+				esc_html( wc_get_order_status_name( $order->get_status() ) ),
+				'<strong>' . esc_html( $amount ) . '</strong>',
+				'<strong>' . esc_html( $order->get_billing_email() ) . '</strong>'
+			),
+			array( 'strong' => array() )
+		) . '</p>';
+		if ( ! $order->has_status( 'on-hold' ) ) {
+			echo '<p class="spl-status spl-status--warn">' . esc_html__( 'First set Status to On hold (left) — you can do both in one save.', 'syssell-payment-link' ) . '</p>';
+		}
+		echo '<p class="spl-field"><label for="spl_link">' . esc_html__( 'Payment link', 'syssell-payment-link' ) . '</label>';
+		echo '<input type="url" id="spl_link" name="spl_link" value="" placeholder="https://invoice.stripe.com/i/…" inputmode="url" autocomplete="off" spellcheck="false" /></p>';
+		echo '<div class="spl-actions">';
+		self::button( 'save', __( 'Save & email link', 'syssell-payment-link' ), true );
+		echo '</div>';
+		/* translators: %s: payment method title */
+		echo '<p class="spl-help">' . esc_html( sprintf( __( 'Sending the invoice switches this order to “%s”, with the same reminders and automatic cancel.', 'syssell-payment-link' ), SPL_Gateway::setting( 'title' ) ) ) . '</p>';
+	}
+
+	/**
 	 * A status line.
 	 *
 	 * @param string $tone warn | active | done | muted.
@@ -254,8 +305,10 @@ class SPL_Admin {
 		if ( ! current_user_can( 'edit_shop_orders' ) ) {
 			return;
 		}
+		// Read after WooCommerce saved the form, so a status chosen in the same save counts.
 		$order = wc_get_order( $order_id );
-		if ( ! SPL_Schedule::is_ours( $order ) ) {
+		$ours  = SPL_Schedule::is_ours( $order );
+		if ( ! $ours && ! self::can_switch( $order ) ) {
 			return;
 		}
 
@@ -266,6 +319,9 @@ class SPL_Admin {
 		// A new or changed link (the box's Save button, or the order's own Update).
 		if ( null !== $posted && $posted !== $current ) {
 			if ( '' === $posted ) {
+				if ( ! $ours ) {
+					return;
+				}
 				SPL_Schedule::remove_link( $order );
 				self::flash( 'success', __( 'Payment link removed. No more reminders will be sent.', 'syssell-payment-link' ) );
 				return;
@@ -274,6 +330,13 @@ class SPL_Admin {
 			if ( '' === $link ) {
 				self::flash( 'error', __( 'That payment link wasn’t saved: it must be a full address starting with https://', 'syssell-payment-link' ) );
 				return;
+			}
+			if ( ! $ours ) {
+				if ( ! $order->has_status( 'on-hold' ) ) {
+					self::flash( 'error', __( 'The invoice wasn’t sent: set the order’s Status to On hold first (you can do both in one save).', 'syssell-payment-link' ) );
+					return;
+				}
+				SPL_Schedule::adopt( $order );
 			}
 			$was_first = '' === $current;
 			if ( SPL_Schedule::save_link( $order, $link ) ) {
@@ -284,6 +347,13 @@ class SPL_Admin {
 				);
 			} elseif ( $order->has_status( 'on-hold' ) ) {
 				self::flash( 'error', __( 'The payment link was saved but the email could not be sent — see the order notes.', 'syssell-payment-link' ) );
+			}
+			return;
+		}
+
+		if ( ! $ours ) {
+			if ( 'save' === $action ) {
+				self::flash( 'error', __( 'Paste the payment link first.', 'syssell-payment-link' ) );
 			}
 			return;
 		}

@@ -2,7 +2,7 @@
 /**
  * Plugin Name:          SysSell Payment Link
  * Description:          "Credit / Debit Card – Pay by Invoice" checkout method. The order waits On hold until you paste the invoice's card payment link (for example a Stripe invoice) on the order screen; the customer gets the invoice by email, with reminders until it is paid or the order expires.
- * Version:              1.0.1
+ * Version:              1.1.0
  * Author:               TwlMed212
  * Requires at least:    6.5
  * Requires PHP:         7.4
@@ -17,7 +17,7 @@
 
 defined( 'ABSPATH' ) || exit;
 
-define( 'SPL_VERSION', '1.0.1' );
+define( 'SPL_VERSION', '1.1.0' );
 define( 'SPL_FILE', __FILE__ );
 define( 'SPL_PATH', plugin_dir_path( __FILE__ ) );
 define( 'SPL_URL', plugin_dir_url( __FILE__ ) );
