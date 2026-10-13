@@ -40,8 +40,8 @@ class SPL_Admin {
 
 	/**
 	 * The box: on orders paid with this method, and on unpaid orders placed
-	 * with another one (a declined card, unpaid crypto …) so an invoice can be
-	 * sent to them too.
+	 * with another one (a declined card, an abandoned crypto or card payment …)
+	 * so an invoice can be sent to them too.
 	 *
 	 * @param string $screen_id Screen ID.
 	 */
@@ -83,13 +83,15 @@ class SPL_Admin {
 
 	/**
 	 * Whether an order placed with another payment method can be sent an
-	 * invoice: unpaid, not free, and On hold, Pending or Failed.
+	 * invoice: unpaid, not free, and On hold, Pending, Failed or Cancelled
+	 * (WooCommerce cancels an abandoned card/crypto payment after "Hold stock"
+	 * minutes; it can still be recovered with an invoice).
 	 *
 	 * @param WC_Order|null $order Order.
 	 */
 	private static function can_switch( $order ): bool {
 		return $order instanceof WC_Order && ! SPL_Schedule::is_ours( $order ) && $order->get_total() > 0 && ! $order->is_paid()
-			&& $order->has_status( array( 'on-hold', 'pending', 'failed' ) );
+			&& $order->has_status( array( 'on-hold', 'pending', 'failed', 'cancelled' ) );
 	}
 
 	/** The order being edited, or null. */

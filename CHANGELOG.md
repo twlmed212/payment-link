@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.2.0 — 2026-10-13
+
+- **Recover cancelled unpaid orders.** WooCommerce cancels a *Pending payment* order after "Hold stock (minutes)" ("Unpaid order cancelled – time limit reached") when the customer leaves the Stripe or OxaPay payment page. Those orders now also get the invoice box: set Status to On hold, paste the link, save. (Invoice orders themselves are On hold and never touched by that rule.)
+
 ## 1.1.0 — 2026-10-12
 
 - **Send an invoice to any unpaid order.** The "Card payment link" box now also appears on unpaid orders placed with another payment method that are On hold, Pending or Failed (e.g. a Stripe card that was declined, unpaid crypto). Saving the link switches the order to "Credit / Debit Card – Pay by Invoice" (order note + `_spl_previous_method` meta keep the old method), emails the invoice and starts the reminders. For Pending/Failed orders the box asks to set Status to On hold first — both can be done in one save.
